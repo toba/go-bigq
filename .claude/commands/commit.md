@@ -34,7 +34,7 @@ If any command fails or review finds blocking issues, report them and STOP. Do n
    - Include affected bean IDs if applicable
 5. Run `git status` to confirm the commit succeeded
 
-## Step 3: Push and Version (if requested)
+## Step 3: Push, Version, and Release (if requested)
 
 If $ARGUMENTS contains "push" or user requested push:
 
@@ -45,34 +45,52 @@ If $ARGUMENTS contains "push" or user requested push:
    - **minor** (x.Y.0): New features, new tools, new flags
    - **major** (X.0.0): Breaking changes, API changes, removed functionality
 4. Ask user to confirm the version increment (show current version and proposed new version)
-5. After confirmation:
+5. After confirmation, push and tag:
    ```bash
    git push
    git tag v<new-version>
    git push origin v<new-version>
    ```
-6. The GitHub Actions workflow will automatically create a release with binaries
 
-### Step 4: Update Homebrew Tap
+### Step 4: Build and Release Locally
 
-After pushing the tag:
+Build the release binary locally (no CI — the ZetaSQL static library is pre-built):
 
-1. Wait for the release workflow to complete:
-   ```bash
-   gh run watch $(gh run list --repo toba/go-bigq --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId') --repo toba/go-bigq
-   ```
+```bash
+CGO_ENABLED=1 go build -ldflags "-X main.version=v<new-version>" -o go-bigq ./cmd/bigq/
+./go-bigq version
+tar -czvf go-bigq-v<new-version>-arm64.tar.gz go-bigq
+shasum -a 256 go-bigq-v<new-version>-arm64.tar.gz > go-bigq-v<new-version>-arm64.tar.gz.sha256
+```
 
-2. Fetch the sha256 from the release:
+Generate release notes and create the GitHub release:
+
+```bash
+NOTES=$(git log --pretty=format:"- %s" <prev-tag>..v<new-version>)
+gh release create v<new-version> --repo toba/go-bigq --title "v<new-version>" --notes "$NOTES" \
+  go-bigq-v<new-version>-arm64.tar.gz \
+  go-bigq-v<new-version>-arm64.tar.gz.sha256
+```
+
+Clean up build artifacts:
+
+```bash
+rm -f go-bigq go-bigq-v<new-version>-arm64.tar.gz go-bigq-v<new-version>-arm64.tar.gz.sha256
+```
+
+### Step 5: Update Homebrew Tap
+
+1. Fetch the sha256:
    ```bash
    gh release download v<new-version> --repo toba/go-bigq --pattern "*.sha256" -O - | awk '{print $1}'
    ```
 
-3. Update `../homebrew-go-bigq/Formula/go-bigq.rb`:
+2. Update `../homebrew-go-bigq/Formula/go-bigq.rb`:
    - Change the `url` line to use the new version tag
    - Change the `version` line to the new version (without 'v' prefix)
-   - Set `sha256` to the value from step 2
+   - Set `sha256` to the value from step 1
 
-4. Commit and push the homebrew tap:
+3. Commit and push the homebrew tap:
    ```bash
    cd ../homebrew-go-bigq
    git add Formula/go-bigq.rb
