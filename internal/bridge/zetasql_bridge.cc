@@ -271,6 +271,18 @@ void zetasql_ParseStatement(const char* sql, zetasql_Status* status) {
     set_status(status, s);
 }
 
+void zetasql_ParseScript(const char* sql, zetasql_Status* status) {
+    zetasql::LanguageOptions lang;
+    lang.EnableMaximumLanguageFeatures();
+    lang.SetSupportsAllStatementKinds();
+    zetasql::ParserOptions opts(lang);
+    std::unique_ptr<zetasql::ParserOutput> output;
+    zetasql::ErrorMessageOptions err_opts;
+    err_opts.mode = zetasql::ERROR_MESSAGE_WITH_PAYLOAD;
+    auto s = zetasql::ParseScript(sql, opts, err_opts, &output);
+    set_status(status, s);
+}
+
 void zetasql_AnalyzeStatement(
     const char* sql, void* catalog, void* opts, zetasql_Status* status) {
     std::unique_ptr<const zetasql::AnalyzerOutput> output;

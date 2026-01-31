@@ -6,9 +6,16 @@ import (
 	"github.com/pacer/go-bigq/internal/bridge"
 )
 
-// ParseStatement parses a SQL statement and returns a syntax error if any.
+// ParseStatement parses a single SQL statement and returns a syntax error if any.
 func ParseStatement(sql string) error {
 	return bridge.ParseStatement(sql)
+}
+
+// ParseScript parses a SQL script (potentially multi-statement, including
+// scripting constructs like DECLARE, SET, IF/END IF, ASSERT, etc.) and
+// returns a syntax error if any. This is a superset of ParseStatement.
+func ParseScript(sql string) error {
+	return bridge.ParseScript(sql)
 }
 
 // AnalyzeStatement analyzes a SQL statement against a catalog, returning

@@ -11,9 +11,6 @@
    "permissions": {
       "allow": [
          "Bash(beans:*)",
-         "Bash(beanup --help:*)",
-         "Bash(beanup sync:*)",
-         "Bash(beanup status:*)",
          "Bash(beanup:*)",
          "Bash(git:*)",
          "Bash(go build:*)",
@@ -45,6 +42,8 @@
          "Bash(gh run list:*)",
          "Bash(gh run view:*)",
          "Bash(gh run watch:*)",
+         "Bash(gh release download:*)",
+         "Bash(gh pr create:*)",
          "Bash(ls:*)",
          "Bash(tree:*)",
          "Bash(wc:*)",
@@ -68,6 +67,9 @@
          "WebSearch",
          "Write(path:.**/.beans/**)",
          "Write(path:.**/.claude/skills/**)"
+      ],
+      "additionalDirectories": [
+         "/Users/jason/Developer/toba/homebrew-go-bigq"
       ],
       "deny": [
          "Bash(git reset --hard:*)",

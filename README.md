@@ -35,6 +35,10 @@ go-bigq lint --format github-actions query.sql
 
 Exit code 0 if no errors, 1 if lint errors found, 2 on usage/input errors.
 
+### BigQuery scripting support
+
+go-bigq uses ZetaSQL's `ParseScript` API to natively validate BigQuery scripting syntax — `DECLARE`, `SET`, `ASSERT`, `IF`/`ELSEIF`/`ELSE`/`END IF`, and other procedural constructs are fully parsed and validated alongside your DML/DDL/DQL. No preprocessing or stripping required.
+
 ### Schema files
 
 Schema JSON files define table structures for semantic validation:

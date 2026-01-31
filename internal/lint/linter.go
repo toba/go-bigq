@@ -39,31 +39,40 @@ func New(catalog *bigq.Catalog) *Linter {
 }
 
 // LintSQL checks a SQL string (potentially multi-statement) for errors.
+// It uses ZetaSQL's ParseScript to validate the full script including
+// scripting constructs (DECLARE, SET, IF, ASSERT, etc.). When a catalog
+// is provided, individual non-scripting statements are additionally
+// analyzed for schema conformance.
 func (l *Linter) LintSQL(sql string) []Result {
-	statements := splitStatements(sql)
-	var results []Result
+	// ParseScript validates the entire script including scripting syntax.
+	if err := bigq.ParseScript(sql); err != nil {
+		return []Result{{
+			Line:    1,
+			Column:  1,
+			Level:   "error",
+			Message: err.Error(),
+		}}
+	}
 
-	for _, stmt := range statements {
+	// Without a catalog, syntax validation is all we can do.
+	if l.catalog == nil {
+		return nil
+	}
+
+	// With a catalog, analyze individual statements for schema conformance.
+	// AnalyzeStatement doesn't support scripting constructs, so we split
+	// and skip those.
+	var results []Result
+	for _, stmt := range splitStatements(sql) {
 		trimmed := strings.TrimSpace(stmt.text)
 		if trimmed == "" || trimmed == ";" {
 			continue
 		}
-
-		// Skip DECLARE statements — valid BigQuery scripting syntax
-		// that ZetaSQL's parser doesn't support.
-		upper := strings.ToUpper(trimmed)
-		if strings.HasPrefix(upper, "DECLARE ") || strings.HasPrefix(upper, "DECLARE\n") || strings.HasPrefix(upper, "DECLARE\t") {
+		if isScriptingStatement(trimmed) {
 			continue
 		}
 
-		var err error
-		if l.catalog != nil {
-			err = bigq.AnalyzeStatement(trimmed, l.catalog)
-		} else {
-			err = bigq.ParseStatement(trimmed)
-		}
-
-		if err != nil {
+		if err := bigq.AnalyzeStatement(trimmed, l.catalog); err != nil {
 			results = append(results, Result{
 				Line:    stmt.startLine,
 				Column:  1,
@@ -72,7 +81,6 @@ func (l *Linter) LintSQL(sql string) []Result {
 			})
 		}
 	}
-
 	return results
 }
 
@@ -90,12 +98,41 @@ func (l *Linter) LintFile(path string) ([]Result, error) {
 	return results, nil
 }
 
+// scriptingKeywords are BigQuery scripting keywords that ZetaSQL's
+// statement-level analyzer doesn't support. These are skipped during
+// schema analysis but are validated by ParseScript.
+var scriptingKeywords = []string{
+	"DECLARE", "SET", "ASSERT",
+	"IF", "ELSEIF", "ELSE", "END",
+}
+
+// isScriptingStatement reports whether trimmed starts with a BigQuery
+// scripting keyword that ZetaSQL's analyzer cannot handle.
+func isScriptingStatement(trimmed string) bool {
+	upper := strings.ToUpper(trimmed)
+	for _, kw := range scriptingKeywords {
+		if !strings.HasPrefix(upper, kw) {
+			continue
+		}
+		// Keyword must be the entire statement or followed by whitespace.
+		if len(upper) == len(kw) {
+			return true
+		}
+		switch upper[len(kw)] {
+		case ' ', '\t', '\n', '\r':
+			return true
+		}
+	}
+	return false
+}
+
 type stmtSpan struct {
 	text      string
 	startLine int
 }
 
 // splitStatements splits SQL on semicolons, tracking line numbers.
+// Used for per-statement schema analysis when a catalog is provided.
 func splitStatements(sql string) []stmtSpan {
 	var spans []stmtSpan
 	line := 1

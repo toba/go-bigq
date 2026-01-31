@@ -32,20 +32,36 @@ func TestSplitStatements(t *testing.T) {
 	}
 }
 
-func TestLintSQL_SkipsDeclare(t *testing.T) {
-	l := &Linter{} // parse-only, no catalog
+func TestLintSQL_ScriptingStatements(t *testing.T) {
+	l := &Linter{} // parse-only via ParseScript, no catalog
 
 	tests := []struct {
 		name string
 		sql  string
 	}{
-		{"declare with default", "DECLARE run_date DATE DEFAULT CURRENT_DATE();\nSELECT 1"},
-		{"declare no default", "DECLARE inserted_rows INT64;\nSELECT 1"},
-		{"declare lowercase", "declare x INT64;\nSELECT 1"},
-		{"declare mixed case", "Declare x INT64;\nSELECT 1"},
-		{"multiple declares", "DECLARE a INT64;\nDECLARE b STRING;\nSELECT 1"},
-		{"declare only", "DECLARE x INT64"},
-		{"declare with tab", "DECLARE\tx INT64"},
+		// DECLARE
+		{"declare with default", "DECLARE run_date DATE DEFAULT CURRENT_DATE();\nSELECT 1;"},
+		{"declare no default", "DECLARE inserted_rows INT64;\nSELECT 1;"},
+		{"declare lowercase", "declare x INT64;\nSELECT 1;"},
+		{"declare mixed case", "Declare x INT64;\nSELECT 1;"},
+		{"multiple declares", "DECLARE a INT64;\nDECLARE b STRING;\nSELECT 1;"},
+		{"declare only", "DECLARE x INT64;"},
+
+		// SET
+		{"set simple", "DECLARE x INT64;\nSET x = 1;\nSELECT 1;"},
+		{"set lowercase", "DECLARE x INT64;\nset x = 1;\nSELECT 1;"},
+
+		// ASSERT
+		{"assert simple", "ASSERT 1 > 0;"},
+		{"assert with as", "ASSERT 1 > 0 AS 'Guardrail failed';"},
+
+		// IF / ELSEIF / ELSE / END IF
+		{"if block", "IF true THEN\n  SELECT 1;\nEND IF;"},
+		{"if else block", "IF true THEN\n  SELECT 1;\nELSE\n  SELECT 2;\nEND IF;"},
+		{"if elseif block", "IF true THEN\n  SELECT 1;\nELSEIF false THEN\n  SELECT 2;\nEND IF;"},
+
+		// Mixed script
+		{"full script", "DECLARE x INT64 DEFAULT 1;\nIF x > 0 THEN\n  SELECT x;\nEND IF;"},
 	}
 
 	for _, tt := range tests {
@@ -58,6 +74,44 @@ func TestLintSQL_SkipsDeclare(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLintSQL_SyntaxErrors(t *testing.T) {
+	l := &Linter{}
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{"bad select", "SELECT * FORM t;"},
+		{"bad in script", "DECLARE x INT64;\nSELECT * FORM t;"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results := l.LintSQL(tt.sql)
+			if len(results) == 0 {
+				t.Errorf("LintSQL(%q) returned 0 errors, want >= 1", tt.sql)
+			}
+		})
+	}
+}
+
+func TestIsScriptingStatement(t *testing.T) {
+	// Should NOT be detected as scripting.
+	falsePositives := []string{
+		"SELECT 1",
+		"INSERT INTO t VALUES (1)",
+		"CREATE TABLE t (x INT64)",
+		"SELECT IF(x, 1, 2) FROM t",
+		"SELECT IFNULL(x, 0) FROM t",
+		"SELECT SETTINGS FROM t",
+	}
+	for _, sql := range falsePositives {
+		if isScriptingStatement(sql) {
+			t.Errorf("isScriptingStatement(%q) = true, want false", sql)
+		}
 	}
 }
 

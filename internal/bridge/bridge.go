@@ -217,6 +217,21 @@ func ParseStatement(sql string) error {
 	return nil
 }
 
+// ParseScript parses a SQL script (potentially multi-statement, with
+// scripting constructs like DECLARE, SET, IF, etc.) and returns any syntax error.
+func ParseScript(sql string) error {
+	csql := C.CString(sql)
+	defer C.free(unsafe.Pointer(csql))
+
+	var st C.zetasql_Status
+	C.zetasql_ParseScript(csql, &st)
+	status := statusFromC(st)
+	if !status.OK {
+		return fmt.Errorf("parse error: %s", status.Error())
+	}
+	return nil
+}
+
 // AnalyzeStatement analyzes a SQL statement against a catalog.
 func AnalyzeStatement(sql string, catalog *SimpleCatalog, opts *AnalyzerOptions) error {
 	csql := C.CString(sql)

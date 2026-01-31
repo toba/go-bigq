@@ -61,6 +61,7 @@ void zetasql_AnalyzerOptions_SetLanguageOptions(void* opts, void* lang_opts);
 
 // --- Parse ---
 void zetasql_ParseStatement(const char* sql, zetasql_Status* status);
+void zetasql_ParseScript(const char* sql, zetasql_Status* status);
 
 // --- Analyze ---
 void zetasql_AnalyzeStatement(
