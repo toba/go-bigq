@@ -78,27 +78,6 @@ Clean up build artifacts:
 rm -f go-bigq go-bigq-v<new-version>-arm64.tar.gz go-bigq-v<new-version>-arm64.tar.gz.sha256
 ```
 
-### Step 5: Update Homebrew Tap
-
-1. Fetch the sha256:
-   ```bash
-   gh release download v<new-version> --repo toba/go-bigq --pattern "*.sha256" -O - | awk '{print $1}'
-   ```
-
-2. Update `../homebrew-go-bigq/Formula/go-bigq.rb`:
-   - Change the `url` line to use the new version tag
-   - Change the `version` line to the new version (without 'v' prefix)
-   - Set `sha256` to the value from step 1
-
-3. Commit and push the homebrew tap:
-   ```bash
-   cd ../homebrew-go-bigq
-   git add Formula/go-bigq.rb
-   git commit -m "bump to v<new-version>"
-   git push
-   cd ../go-bigq
-   ```
-
 ### Version Examples
 
 - Current: v1.2.3

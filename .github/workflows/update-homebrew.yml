@@ -1,0 +1,60 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-homebrew:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          ASSET="go-bigq-${TAG}-arm64.tar.gz"
+
+          # Download the .sha256 file from the release
+          SHA=$(gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "${ASSET}.sha256" -O - \
+            | awk '{print $1}')
+
+          if [ -z "$SHA" ]; then
+            echo "ERROR: Could not extract SHA256 from release assets"
+            exit 1
+          fi
+
+          echo "Updating formula to version ${VERSION} with SHA ${SHA}"
+
+          # Clone tap, update formula, push
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/toba/homebrew-go-bigq.git" tap
+          cd tap
+
+          cat > Formula/go-bigq.rb << FORMULA
+class GoBigq < Formula
+  desc "BigQuery SQL linter powered by ZetaSQL/googlesql"
+  homepage "https://github.com/toba/go-bigq"
+  url "https://github.com/toba/go-bigq/releases/download/${TAG}/${ASSET}"
+  version "${VERSION}"
+  sha256 "${SHA}"
+  license "Apache-2.0"
+
+  depends_on :macos
+  depends_on arch: :arm64
+
+  def install
+    bin.install "go-bigq"
+  end
+
+  test do
+    assert_match "go-bigq version", shell_output("#{bin}/go-bigq version")
+  end
+end
+FORMULA
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/go-bigq.rb
+          git commit -m "bump to ${VERSION}"
+          git push
