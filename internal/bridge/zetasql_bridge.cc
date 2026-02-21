@@ -6,16 +6,16 @@
 #include <string>
 #include <vector>
 
-#include "zetasql/public/analyzer.h"
-#include "zetasql/public/analyzer_options.h"
-#include "zetasql/public/catalog.h"
-#include "zetasql/public/error_helpers.h"
-#include "zetasql/public/language_options.h"
-#include "zetasql/public/simple_catalog.h"
-#include "zetasql/public/type.h"
-#include "zetasql/public/types/type_factory.h"
-#include "zetasql/public/builtin_function_options.h"
-#include "zetasql/parser/parser.h"
+#include "googlesql/public/analyzer.h"
+#include "googlesql/public/analyzer_options.h"
+#include "googlesql/public/catalog.h"
+#include "googlesql/public/error_helpers.h"
+#include "googlesql/public/language_options.h"
+#include "googlesql/public/simple_catalog.h"
+#include "googlesql/public/type.h"
+#include "googlesql/public/types/type_factory.h"
+#include "googlesql/public/builtin_function_options.h"
+#include "googlesql/parser/parser.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 
@@ -38,8 +38,8 @@ static void set_status(zetasql_Status* st, const absl::Status& status) {
         st->error_line = 0;
         st->error_column = 0;
 
-        zetasql::ErrorLocation location;
-        if (zetasql::GetErrorLocation(status, &location)) {
+        googlesql::ErrorLocation location;
+        if (googlesql::GetErrorLocation(status, &location)) {
             st->error_line = location.line();
             st->error_column = location.column();
         }
@@ -47,30 +47,30 @@ static void set_status(zetasql_Status* st, const absl::Status& status) {
 }
 
 static absl::Status parse_type(const std::string& type_str,
-                                zetasql::TypeFactory* factory,
-                                const zetasql::Type** out_type) {
-    static const struct { const char* name; zetasql::TypeKind kind; } simple_types[] = {
-        {"INT64", zetasql::TYPE_INT64},
-        {"INT32", zetasql::TYPE_INT32},
-        {"UINT32", zetasql::TYPE_UINT32},
-        {"UINT64", zetasql::TYPE_UINT64},
-        {"FLOAT32", zetasql::TYPE_FLOAT},
-        {"FLOAT64", zetasql::TYPE_DOUBLE},
-        {"FLOAT", zetasql::TYPE_FLOAT},
-        {"DOUBLE", zetasql::TYPE_DOUBLE},
-        {"NUMERIC", zetasql::TYPE_NUMERIC},
-        {"BIGNUMERIC", zetasql::TYPE_BIGNUMERIC},
-        {"BOOL", zetasql::TYPE_BOOL},
-        {"BOOLEAN", zetasql::TYPE_BOOL},
-        {"STRING", zetasql::TYPE_STRING},
-        {"BYTES", zetasql::TYPE_BYTES},
-        {"DATE", zetasql::TYPE_DATE},
-        {"DATETIME", zetasql::TYPE_DATETIME},
-        {"TIME", zetasql::TYPE_TIME},
-        {"TIMESTAMP", zetasql::TYPE_TIMESTAMP},
-        {"GEOGRAPHY", zetasql::TYPE_GEOGRAPHY},
-        {"JSON", zetasql::TYPE_JSON},
-        {"INTERVAL", zetasql::TYPE_INTERVAL},
+                                googlesql::TypeFactory* factory,
+                                const googlesql::Type** out_type) {
+    static const struct { const char* name; googlesql::TypeKind kind; } simple_types[] = {
+        {"INT64", googlesql::TYPE_INT64},
+        {"INT32", googlesql::TYPE_INT32},
+        {"UINT32", googlesql::TYPE_UINT32},
+        {"UINT64", googlesql::TYPE_UINT64},
+        {"FLOAT32", googlesql::TYPE_FLOAT},
+        {"FLOAT64", googlesql::TYPE_DOUBLE},
+        {"FLOAT", googlesql::TYPE_FLOAT},
+        {"DOUBLE", googlesql::TYPE_DOUBLE},
+        {"NUMERIC", googlesql::TYPE_NUMERIC},
+        {"BIGNUMERIC", googlesql::TYPE_BIGNUMERIC},
+        {"BOOL", googlesql::TYPE_BOOL},
+        {"BOOLEAN", googlesql::TYPE_BOOL},
+        {"STRING", googlesql::TYPE_STRING},
+        {"BYTES", googlesql::TYPE_BYTES},
+        {"DATE", googlesql::TYPE_DATE},
+        {"DATETIME", googlesql::TYPE_DATETIME},
+        {"TIME", googlesql::TYPE_TIME},
+        {"TIMESTAMP", googlesql::TYPE_TIMESTAMP},
+        {"GEOGRAPHY", googlesql::TYPE_GEOGRAPHY},
+        {"JSON", googlesql::TYPE_JSON},
+        {"INTERVAL", googlesql::TYPE_INTERVAL},
     };
 
     std::string upper = type_str;
@@ -86,14 +86,14 @@ static absl::Status parse_type(const std::string& type_str,
 
     for (const auto& st : simple_types) {
         if (upper == st.name) {
-            *out_type = zetasql::types::TypeFromSimpleTypeKind(st.kind);
+            *out_type = googlesql::types::TypeFromSimpleTypeKind(st.kind);
             return absl::OkStatus();
         }
     }
 
     if (upper.size() > 7 && upper.substr(0, 6) == "ARRAY<" && upper.back() == '>') {
         std::string inner = original_trimmed.substr(6, original_trimmed.size() - 7);
-        const zetasql::Type* element_type = nullptr;
+        const googlesql::Type* element_type = nullptr;
         auto s = parse_type(inner, factory, &element_type);
         if (!s.ok()) return s;
         return factory->MakeArrayType(element_type, out_type);
@@ -101,7 +101,7 @@ static absl::Status parse_type(const std::string& type_str,
 
     if (upper.size() > 8 && upper.substr(0, 7) == "STRUCT<" && upper.back() == '>') {
         std::string inner = original_trimmed.substr(7, original_trimmed.size() - 8);
-        std::vector<zetasql::StructType::StructField> fields;
+        std::vector<googlesql::StructType::StructField> fields;
 
         int depth = 0;
         size_t field_start = 0;
@@ -135,7 +135,7 @@ static absl::Status parse_type(const std::string& type_str,
                 size_t fts = field_type_str.find_first_not_of(" \t");
                 if (fts != std::string::npos) field_type_str = field_type_str.substr(fts);
 
-                const zetasql::Type* field_type = nullptr;
+                const googlesql::Type* field_type = nullptr;
                 auto s = parse_type(field_type_str, factory, &field_type);
                 if (!s.ok()) return s;
                 fields.push_back({field_name, field_type});
@@ -158,61 +158,61 @@ static absl::Status parse_type(const std::string& type_str,
 extern "C" {
 
 void* zetasql_TypeFactory_new() {
-    return static_cast<void*>(new zetasql::TypeFactory());
+    return static_cast<void*>(new googlesql::TypeFactory());
 }
 
 void zetasql_TypeFactory_free(void* factory) {
-    delete static_cast<zetasql::TypeFactory*>(factory);
+    delete static_cast<googlesql::TypeFactory*>(factory);
 }
 
 void* zetasql_LanguageOptions_new() {
-    return static_cast<void*>(new zetasql::LanguageOptions());
+    return static_cast<void*>(new googlesql::LanguageOptions());
 }
 
 void zetasql_LanguageOptions_free(void* opts) {
-    delete static_cast<zetasql::LanguageOptions*>(opts);
+    delete static_cast<googlesql::LanguageOptions*>(opts);
 }
 
 void zetasql_LanguageOptions_EnableMaximumLanguageFeatures(void* opts) {
-    static_cast<zetasql::LanguageOptions*>(opts)->EnableMaximumLanguageFeatures();
+    static_cast<googlesql::LanguageOptions*>(opts)->EnableMaximumLanguageFeatures();
 }
 
 void zetasql_LanguageOptions_SetProductMode(void* opts, int mode) {
-    static_cast<zetasql::LanguageOptions*>(opts)->set_product_mode(
-        static_cast<zetasql::ProductMode>(mode));
+    static_cast<googlesql::LanguageOptions*>(opts)->set_product_mode(
+        static_cast<googlesql::ProductMode>(mode));
 }
 
 void zetasql_LanguageOptions_SetSupportsAllStatementKinds(void* opts) {
-    static_cast<zetasql::LanguageOptions*>(opts)->SetSupportsAllStatementKinds();
+    static_cast<googlesql::LanguageOptions*>(opts)->SetSupportsAllStatementKinds();
 }
 
 void* zetasql_SimpleCatalog_new(const char* name, void* factory) {
     return static_cast<void*>(
-        new zetasql::SimpleCatalog(name, static_cast<zetasql::TypeFactory*>(factory)));
+        new googlesql::SimpleCatalog(name, static_cast<googlesql::TypeFactory*>(factory)));
 }
 
 void zetasql_SimpleCatalog_free(void* catalog) {
-    delete static_cast<zetasql::SimpleCatalog*>(catalog);
+    delete static_cast<googlesql::SimpleCatalog*>(catalog);
 }
 
 void zetasql_SimpleCatalog_AddBuiltinFunctionsAndTypes(
     void* catalog, void* lang_opts, zetasql_Status* status) {
-    zetasql::BuiltinFunctionOptions options(
-        *static_cast<zetasql::LanguageOptions*>(lang_opts));
-    auto s = static_cast<zetasql::SimpleCatalog*>(catalog)->AddBuiltinFunctionsAndTypes(options);
+    googlesql::BuiltinFunctionOptions options(
+        *static_cast<googlesql::LanguageOptions*>(lang_opts));
+    auto s = static_cast<googlesql::SimpleCatalog*>(catalog)->AddBuiltinFunctionsAndTypes(options);
     set_status(status, s);
 }
 
 void* zetasql_SimpleCatalog_AddSubCatalog(void* catalog, const char* name) {
-    auto* parent = static_cast<zetasql::SimpleCatalog*>(catalog);
-    auto* sub = new zetasql::SimpleCatalog(name, parent->type_factory());
+    auto* parent = static_cast<googlesql::SimpleCatalog*>(catalog);
+    auto* sub = new googlesql::SimpleCatalog(name, parent->type_factory());
     parent->AddOwnedCatalog(sub);
     return static_cast<void*>(sub);
 }
 
 void zetasql_SimpleCatalog_AddTable(void* catalog, void* table) {
-    static_cast<zetasql::SimpleCatalog*>(catalog)->AddTable(
-        static_cast<zetasql::SimpleTable*>(table));
+    static_cast<googlesql::SimpleCatalog*>(catalog)->AddTable(
+        static_cast<googlesql::SimpleTable*>(table));
 }
 
 void* zetasql_SimpleTable_new(
@@ -221,11 +221,11 @@ void* zetasql_SimpleTable_new(
     int column_count,
     void* factory,
     zetasql_Status* status) {
-    auto* tf = static_cast<zetasql::TypeFactory*>(factory);
+    auto* tf = static_cast<googlesql::TypeFactory*>(factory);
 
-    std::vector<zetasql::SimpleTable::NameAndType> cols;
+    std::vector<googlesql::SimpleTable::NameAndType> cols;
     for (int i = 0; i < column_count; i++) {
-        const zetasql::Type* col_type = nullptr;
+        const googlesql::Type* col_type = nullptr;
         auto s = parse_type(columns[i].type_name, tf, &col_type);
         if (!s.ok()) {
             set_status(status, s);
@@ -234,7 +234,7 @@ void* zetasql_SimpleTable_new(
         cols.push_back({columns[i].name, col_type});
     }
 
-    auto* table = new zetasql::SimpleTable(name, cols);
+    auto* table = new googlesql::SimpleTable(name, cols);
 
     status->ok = true;
     status->error_message = nullptr;
@@ -245,52 +245,52 @@ void* zetasql_SimpleTable_new(
 }
 
 void zetasql_SimpleTable_free(void* table) {
-    delete static_cast<zetasql::SimpleTable*>(table);
+    delete static_cast<googlesql::SimpleTable*>(table);
 }
 
 void* zetasql_AnalyzerOptions_new() {
-    return static_cast<void*>(new zetasql::AnalyzerOptions());
+    return static_cast<void*>(new googlesql::AnalyzerOptions());
 }
 
 void zetasql_AnalyzerOptions_free(void* opts) {
-    delete static_cast<zetasql::AnalyzerOptions*>(opts);
+    delete static_cast<googlesql::AnalyzerOptions*>(opts);
 }
 
 void zetasql_AnalyzerOptions_SetLanguageOptions(void* opts, void* lang_opts) {
-    static_cast<zetasql::AnalyzerOptions*>(opts)->set_language(
-        *static_cast<zetasql::LanguageOptions*>(lang_opts));
+    static_cast<googlesql::AnalyzerOptions*>(opts)->set_language(
+        *static_cast<googlesql::LanguageOptions*>(lang_opts));
 }
 
 void zetasql_ParseStatement(const char* sql, zetasql_Status* status) {
-    zetasql::LanguageOptions lang;
+    googlesql::LanguageOptions lang;
     lang.EnableMaximumLanguageFeatures();
     lang.SetSupportsAllStatementKinds();
-    zetasql::ParserOptions opts(lang);
-    std::unique_ptr<zetasql::ParserOutput> output;
-    auto s = zetasql::ParseStatement(sql, opts, &output);
+    googlesql::ParserOptions opts(lang);
+    std::unique_ptr<googlesql::ParserOutput> output;
+    auto s = googlesql::ParseStatement(sql, opts, &output);
     set_status(status, s);
 }
 
 void zetasql_ParseScript(const char* sql, zetasql_Status* status) {
-    zetasql::LanguageOptions lang;
+    googlesql::LanguageOptions lang;
     lang.EnableMaximumLanguageFeatures();
     lang.SetSupportsAllStatementKinds();
-    zetasql::ParserOptions opts(lang);
-    std::unique_ptr<zetasql::ParserOutput> output;
-    zetasql::ErrorMessageOptions err_opts;
-    err_opts.mode = zetasql::ERROR_MESSAGE_WITH_PAYLOAD;
-    auto s = zetasql::ParseScript(sql, opts, err_opts, &output);
+    googlesql::ParserOptions opts(lang);
+    std::unique_ptr<googlesql::ParserOutput> output;
+    googlesql::ErrorMessageOptions err_opts;
+    err_opts.mode = googlesql::ERROR_MESSAGE_WITH_PAYLOAD;
+    auto s = googlesql::ParseScript(sql, opts, err_opts, &output);
     set_status(status, s);
 }
 
 void zetasql_AnalyzeStatement(
     const char* sql, void* catalog, void* opts, zetasql_Status* status) {
-    std::unique_ptr<const zetasql::AnalyzerOutput> output;
-    auto s = zetasql::AnalyzeStatement(
+    std::unique_ptr<const googlesql::AnalyzerOutput> output;
+    auto s = googlesql::AnalyzeStatement(
         sql,
-        *static_cast<zetasql::AnalyzerOptions*>(opts),
-        static_cast<zetasql::SimpleCatalog*>(catalog),
-        static_cast<zetasql::SimpleCatalog*>(catalog)->type_factory(),
+        *static_cast<googlesql::AnalyzerOptions*>(opts),
+        static_cast<googlesql::SimpleCatalog*>(catalog),
+        static_cast<googlesql::SimpleCatalog*>(catalog)->type_factory(),
         &output);
     set_status(status, s);
 }

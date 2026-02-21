@@ -2,12 +2,12 @@
 description: Stage all changes and commit with a descriptive message
 ---
 
-## Sync Beans to ClickUp
+## Sync Issues to ClickUp
 
-Before staging, sync beans in the background (non-blocking):
+Before staging, sync issues in the background (non-blocking):
 
 ```bash
-beanup --config .beans.clickup.yml sync &
+todo sync &
 ```
 
 ## Step 1: Run Critical Review (Parallel)
@@ -31,7 +31,7 @@ If any command fails or review finds blocking issues, report them and STOP. Do n
 4. Commit with a concise, descriptive message:
    - Lowercase, imperative mood (e.g., "add feature" not "Added feature")
    - Focus on "why" not just "what"
-   - Include affected bean IDs if applicable
+   - Include affected issue IDs if applicable
 5. Run `git status` to confirm the commit succeeded
 
 ## Step 3: Push, Version, and Release (if requested)

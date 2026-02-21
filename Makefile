@@ -13,6 +13,7 @@ $(LIB_DIR)/libzetasql.a: $(GOOGLESQL_DIR)/MODULE.bazel
 	cd $(GOOGLESQL_DIR) && mkdir -p bigq && cp ../../build/BUILD.bigq bigq/BUILD
 	cd $(GOOGLESQL_DIR) && bazel build --compilation_mode=opt --check_visibility=false --experimental_cc_static_library //bigq:zetasql_complete
 	@echo "==> Copying static library..."
+	chmod u+w $(LIB_DIR)/libzetasql.a 2>/dev/null || true
 	cp $(GOOGLESQL_DIR)/bazel-bin/bigq/libzetasql_complete.a $(LIB_DIR)/libzetasql.a
 	@echo "==> Copying ICU libraries..."
 	cp $$(find -L $(GOOGLESQL_DIR)/bazel-bin/external -name 'libicuuc.a' -path '*/copy_icu/*' | head -1) $(LIB_DIR)/

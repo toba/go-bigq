@@ -6,7 +6,7 @@ set -euo pipefail
 # Usage: collect_headers.sh <googlesql_dir> <include_dir>
 
 GOOGLESQL_DIR="$1"
-INCLUDE_DIR="$2"
+INCLUDE_DIR="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
 
 mkdir -p "$INCLUDE_DIR"
 
@@ -19,21 +19,21 @@ copy_with_parents() {
     cp -f "$src" "$dest/$rel"
 }
 
-# 1. Copy zetasql source headers
-echo "Copying zetasql source headers..."
+# 1. Copy googlesql source headers
+echo "Copying googlesql source headers..."
 cd "$GOOGLESQL_DIR"
-find zetasql -name '*.h' -type f | while read -r f; do
-    copy_with_parents "$f" "." "../$INCLUDE_DIR"
+find googlesql -name '*.h' -type f | while read -r f; do
+    copy_with_parents "$f" "." "$INCLUDE_DIR"
 done
 
 # 2. Copy Bazel-generated headers (.pb.h, flex/bison output, etc.)
 BAZEL_BIN="bazel-bin"
 if [ -d "$BAZEL_BIN" ]; then
     echo "Copying Bazel-generated headers..."
-    find -L "$BAZEL_BIN" -name '*.h' -path '*/zetasql/*' -type f 2>/dev/null | while read -r f; do
+    find -L "$BAZEL_BIN" -name '*.h' -path '*/googlesql/*' -type f 2>/dev/null | while read -r f; do
         rel="${f#${BAZEL_BIN}/}"
-        mkdir -p "../$INCLUDE_DIR/$(dirname "$rel")"
-        cp -f "$f" "../$INCLUDE_DIR/$rel"
+        mkdir -p "$INCLUDE_DIR/$(dirname "$rel")"
+        cp -f "$f" "$INCLUDE_DIR/$rel"
     done
 fi
 
@@ -72,8 +72,8 @@ copy_external_headers() {
 
         find "$search_dir" -name "$pattern" -type f 2>/dev/null | while read -r f; do
             local rel="${f#${search_dir}/}"
-            mkdir -p "../$INCLUDE_DIR/$(dirname "$rel")"
-            cp -f "$f" "../$INCLUDE_DIR/$rel"
+            mkdir -p "$INCLUDE_DIR/$(dirname "$rel")"
+            cp -f "$f" "$INCLUDE_DIR/$rel"
         done
         echo "  Copied $name from $search_dir"
     else
