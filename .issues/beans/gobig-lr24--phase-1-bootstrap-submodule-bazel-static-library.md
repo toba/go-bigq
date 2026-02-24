@@ -7,6 +7,10 @@ priority: normal
 created_at: 2026-01-31T01:17:35Z
 updated_at: 2026-01-31T02:50:48Z
 parent: gobig-iut0
+sync:
+    clickup:
+        synced_at: "2026-02-21T00:27:58Z"
+        task_id: 868hk0170
 ---
 
 Set up project structure, git submodule for googlesql 2025.12.1, Bazel build for static lib, custom C bridge (not goccy copy), Go bindings.

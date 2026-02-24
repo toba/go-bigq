@@ -26,10 +26,10 @@ func AnalyzeStatement(sql string, catalog *Catalog) error {
 
 // Catalog holds schema information (tables, functions) used during SQL analysis.
 type Catalog struct {
-	inner   *bridge.SimpleCatalog
-	factory *bridge.TypeFactory
+	inner    *bridge.SimpleCatalog
+	factory  *bridge.TypeFactory
 	langOpts *bridge.LanguageOptions
-	opts    *bridge.AnalyzerOptions
+	opts     *bridge.AnalyzerOptions
 }
 
 // CatalogOption configures catalog creation.

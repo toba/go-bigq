@@ -12,9 +12,9 @@ import (
 // Result represents a single lint finding.
 type Result struct {
 	File    string `json:"file"`
-	Line    int    `json:"line"`    // 1-based
-	Column  int    `json:"column"`  // 1-based
-	Level   string `json:"level"`   // "error" or "warning"
+	Line    int    `json:"line"`   // 1-based
+	Column  int    `json:"column"` // 1-based
+	Level   string `json:"level"`  // "error" or "warning"
 	Message string `json:"message"`
 }
 
@@ -168,18 +168,20 @@ func splitStatements(sql string) []stmtSpan {
 		}
 
 		if inSingleQuote {
-			if c == '\'' {
+			switch c {
+			case '\'':
 				inSingleQuote = false
-			} else if c == '\\' {
+			case '\\':
 				i++ // skip escaped char
 			}
 			continue
 		}
 
 		if inDoubleQuote {
-			if c == '"' {
+			switch c {
+			case '"':
 				inDoubleQuote = false
-			} else if c == '\\' {
+			case '\\':
 				i++
 			}
 			continue

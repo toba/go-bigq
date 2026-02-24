@@ -6,6 +6,10 @@ type: bug
 priority: normal
 created_at: 2026-01-31T04:14:54Z
 updated_at: 2026-01-31T04:47:50Z
+sync:
+    clickup:
+        synced_at: "2026-02-21T00:27:56Z"
+        task_id: 868hk016t
 ---
 
 go-bigq lint fails on IF/END IF control flow blocks:

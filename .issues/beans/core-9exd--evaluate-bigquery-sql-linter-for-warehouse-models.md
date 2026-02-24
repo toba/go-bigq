@@ -8,6 +8,10 @@ tags:
     - bigquery
 created_at: 2026-01-30T17:21:39Z
 updated_at: 2026-01-31T00:56:13Z
+sync:
+    clickup:
+        synced_at: "2026-02-21T00:27:57Z"
+        task_id: 868hk016y
 ---
 
 ## Context

@@ -74,7 +74,9 @@ func TestLoadFileNotFound(t *testing.T) {
 func TestLoadFileInvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.json")
-	os.WriteFile(path, []byte("not json"), 0644)
+	if err := os.WriteFile(path, []byte("not json"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err := LoadFile(path)
 	if err == nil {

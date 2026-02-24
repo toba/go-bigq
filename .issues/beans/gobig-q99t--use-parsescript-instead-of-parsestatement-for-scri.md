@@ -6,6 +6,10 @@ type: feature
 priority: normal
 created_at: 2026-01-31T04:22:28Z
 updated_at: 2026-01-31T04:26:21Z
+sync:
+    clickup:
+        synced_at: "2026-02-21T00:27:56Z"
+        task_id: 868hk016z
 ---
 
 Replace the skip-scripting-keywords approach with ZetaSQL's ParseScript API, which parses full multi-statement scripts including DECLARE, SET, ASSERT, IF/END IF. ParseScript is a superset of ParseStatement — regular DML/DDL/DQL statements are still fully syntax-validated.

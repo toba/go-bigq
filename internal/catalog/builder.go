@@ -4,8 +4,8 @@ package catalog
 import (
 	"strings"
 
-	"github.com/pacer/go-bigq/internal/schema"
 	"github.com/pacer/go-bigq/bigq"
+	"github.com/pacer/go-bigq/internal/schema"
 )
 
 // BuildFromSchema creates a Catalog from a schema definition.

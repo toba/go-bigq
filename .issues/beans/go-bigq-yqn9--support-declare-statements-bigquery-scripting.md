@@ -6,6 +6,10 @@ type: bug
 priority: normal
 created_at: 2026-01-31T04:12:03Z
 updated_at: 2026-01-31T04:47:49Z
+sync:
+    clickup:
+        synced_at: "2026-02-21T00:27:56Z"
+        task_id: 868hk016w
 ---
 
 go-bigq lint fails on files with DECLARE statements (BigQuery scripting syntax). ZetaSQL doesn't support DECLARE as a top-level statement.

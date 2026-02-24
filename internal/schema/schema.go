@@ -15,7 +15,7 @@ type Schema struct {
 
 // Table represents a table definition.
 type Table struct {
-	Name    string   `json:"name"`    // Fully qualified: project.dataset.table
+	Name    string   `json:"name"` // Fully qualified: project.dataset.table
 	Columns []Column `json:"columns"`
 }
 

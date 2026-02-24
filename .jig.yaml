@@ -1,0 +1,38 @@
+todo:
+    path: .issues
+    default_status: draft
+    default_type: task
+    sync:
+        clickup:
+            custom_fields:
+                bean_id: a0b0c69a-d036-4031-9deb-4ecc4cfa3e55
+                created_at: d3adc5e1-eedf-46e0-b5d5-a4dce3a0666b
+            list_id: "901112937048"
+            status_mapping:
+                completed: completed
+                draft: not started
+                in-progress: in progress
+                ready: not started
+                review: review
+                scrapped: completed
+            type_mapping:
+                bug: 1001
+                epic: 1002
+                feature: 0
+                milestone: 1
+                task: 0
+citations:
+    - repo: google/zetasql
+      branch: master
+      notes: GoogleSQL(formerly ZetaSQL) - Analyzer Framework for SQL
+      last_checked_sha: 36dd14aa0657ea299725504bc0f938732f58f380
+      last_checked_date: "2026-02-24T18:24:12Z"
+      paths:
+        high:
+            - '**/*.py'
+        medium:
+            - requirements.txt
+        low:
+            - .github/**
+            - README.md
+            - LICENSE
